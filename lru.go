@@ -21,6 +21,15 @@ func newLRUCache(cb *CacheBuilder) *LRUCache {
 	return c
 }
 
+func NewLRUCache(cb *CacheBuilder) *LRUCache {
+	c := &LRUCache{}
+	buildCache(&c.baseCache, cb)
+
+	c.init()
+	c.loadGroup.cache = c
+	return c
+}
+
 func (c *LRUCache) init() {
 	c.evictList = list.New()
 	c.items = make(map[interface{}]*list.Element, c.size+1)
@@ -94,7 +103,7 @@ func (c *LRUCache) SetWithExpire(key, value interface{}, expiration time.Duratio
 func (c *LRUCache) Get(key interface{}) (interface{}, error) {
 	v, err := c.get(key, false)
 	if err == KeyNotFoundError {
-		return c.getWithLoader(key, true)
+		return v, err
 	}
 	return v, err
 }
@@ -114,9 +123,6 @@ func (c *LRUCache) get(key interface{}, onLoad bool) (interface{}, error) {
 	v, err := c.getValue(key, onLoad)
 	if err != nil {
 		return nil, err
-	}
-	if c.deserializeFunc != nil {
-		return c.deserializeFunc(key, v)
 	}
 	return v, nil
 }
